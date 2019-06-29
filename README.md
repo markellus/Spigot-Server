@@ -1,5 +1,5 @@
 # Spigot-Server
-IPC server for spigot (a command-line exact real calculator)
+Windows IPC server for spigot (a command-line exact real calculator)
 
 see https://www.chiark.greenend.org.uk/~sgtatham/spigot/ for more information.
 
