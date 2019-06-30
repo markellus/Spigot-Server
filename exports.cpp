@@ -21,7 +21,7 @@
 
 char* Call(int argc, char** argv)
 {
-	StdOutRedirect stdoutRedirect(4096);
+	StdOutRedirect stdoutRedirect(8192);
 
 	stdoutRedirect.start();
 	int iResult = main(argc, argv);
@@ -32,14 +32,15 @@ char* Call(int argc, char** argv)
 		return "ERROR-INPUT";
 	}
 
-	char szBuffer[4096];
+	char* szBuffer = new char[8193];
 
-	int nOutRead = stdoutRedirect.getBuffer(szBuffer, 4096);
+	int nOutRead = stdoutRedirect.getBuffer(szBuffer, 8192);
 
 	if (!nOutRead)
 	{
 		return "ERROR-IO";
 	}
+	szBuffer[nOutRead] = '\0';
 
 	return szBuffer;
 }
