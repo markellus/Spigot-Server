@@ -75,7 +75,7 @@ void SendData(SM* sm, HANDLE mutex, std::string strData)
 	}
 }
 
-char* ReceiveData(SM* sm, HANDLE mutex)
+std::string ReceiveData(SM* sm, HANDLE mutex)
 {
 	bool bReceived = false;
 
@@ -91,6 +91,7 @@ char* ReceiveData(SM* sm, HANDLE mutex)
 			memcpy(cPart, sm->cContent, sm->iContentSize);
 			cPart[sm->iContentSize] = '\0';
 			strResult += cPart;
+			delete[] cPart;
 
 			if (sm->iStatus == SEND_DATA)
 			{
@@ -103,21 +104,29 @@ char* ReceiveData(SM* sm, HANDLE mutex)
 		ReleaseMutex(mutex);
 	}
 
-	char* cResult = new char[strResult.size()];
-	memcpy(cResult, strResult.c_str(), strResult.size() + 1);
-
-	return cResult;
+	return strResult;
 }
 
+//Arguments:
+// 0 - file path
+// 1 - shared mutex name
+// 2 - file mapping name
 int main(int argc, char** argv)
 {
+	if(argc != 3)
+	{
+		return -1;
+	}
+
 	HANDLE fm;
-	HANDLE mutex = CreateMutex(nullptr, FALSE, "SPGT_SM_MTX");
+	HANDLE mutex = CreateMutex(nullptr, FALSE, argv[1]);
 	SM* sm;
+
+	const std::string strArgs = "-d 600";
 
 	try
 	{
-		fm = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(SM), L"SPGT_SM");
+		fm = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(SM), argv[2]);
 		sm = static_cast<struct SM*>(MapViewOfFile(fm, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, sizeof(SM)));
 		sm->iStatus = 0;
 		sm->iContentSizeMax = CONTENT_SIZE;
@@ -131,11 +140,18 @@ int main(int argc, char** argv)
 	{
 		if (sm->iStatus == SEND_DATA || sm->iStatus == SEND_DATA_PART)
 		{
-			char* cContent[3];
-			cContent[1] = "-d 600\0";
-			cContent[2] = ReceiveData(sm, mutex);
-			std::string strOut = Call(3, cContent);
+			char* szData = _strdup(ReceiveData(sm, mutex).c_str());
+			char* szArgs = _strdup(strArgs.c_str());
+
+			char* szContent[3] = {nullptr};
+			szContent[1] = szArgs;
+			szContent[2] = szData;
+
+			const std::string strOut = call(3, szContent);
 			SendData(sm, mutex, strOut);
+
+			delete szArgs;
+			delete szData;
 		}
 		else
 		{

@@ -18,6 +18,6 @@
 #ifndef EXPORTS_H
 #define EXPORTS_H
 
-extern "C" __declspec(dllexport) char* Call(int argc, char** argv);
+extern "C" __declspec(dllexport) char* call(int argc, char** argv);
 
 #endif // EXPORTS_H

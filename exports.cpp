@@ -19,28 +19,43 @@
 #include "../spigot/main.cpp"
 #include "StdOutRedirect.h"
 
-char* Call(int argc, char** argv)
+#define REDIRECT_BUFFER_SIZE 8192
+
+char* s_szBuffer = new char[REDIRECT_BUFFER_SIZE];
+
+const char* ERR_INTERNAL = "ERROR-INTERNAL-BUFFER\0";
+const char* ERR_INPUT = "ERROR-INPUT\0";
+const char* ERR_IO = "ERROR-IO\0";
+
+char* call(int argc, char** argv)
 {
-	StdOutRedirect stdoutRedirect(8192);
+	StdOutRedirect stdoutRedirect(REDIRECT_BUFFER_SIZE - 1);
 
-	stdoutRedirect.start();
-	int iResult = main(argc, argv);
-	stdoutRedirect.stop();
+	const int iStart = stdoutRedirect.start();
+	const int iResult = main(argc, argv);
+	const int iStop = stdoutRedirect.stop();
 
-	if(iResult != 0)
+	if(iStart == -1 || iStop == -1)
 	{
-		return "ERROR-INPUT";
+		memcpy(s_szBuffer, ERR_INTERNAL, 22);
+	}
+	else if(iResult != 0)
+	{
+		memcpy(s_szBuffer, ERR_INPUT, 12);
+	}
+	else
+	{
+		const int nOutRead = stdoutRedirect.getBuffer(s_szBuffer, REDIRECT_BUFFER_SIZE - 1);
+
+		if (!nOutRead)
+		{
+			memcpy(s_szBuffer, ERR_IO, 10);
+		}
+		else
+		{
+			s_szBuffer[nOutRead] = '\0';
+		}
 	}
 
-	char* szBuffer = new char[8193];
-
-	int nOutRead = stdoutRedirect.getBuffer(szBuffer, 8192);
-
-	if (!nOutRead)
-	{
-		return "ERROR-IO";
-	}
-	szBuffer[nOutRead] = '\0';
-
-	return szBuffer;
+	return s_szBuffer;
 }
