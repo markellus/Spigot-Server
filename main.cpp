@@ -107,22 +107,43 @@ std::string ReceiveData(SM* sm, HANDLE mutex)
 	return strResult;
 }
 
+bool parentProcessRunning(DWORD pid)
+{
+	HANDLE process = OpenProcess(SYNCHRONIZE, FALSE, pid);
+	DWORD ret = WaitForSingleObject(process, 0);
+	CloseHandle(process);
+	return ret == WAIT_TIMEOUT;
+}
+
 //Arguments:
 // 0 - file path
 // 1 - shared mutex name
 // 2 - file mapping name
 int main(int argc, char** argv)
 {
-	if(argc != 3)
+	DWORD pidParent = 0;
+
+	if(argc < 3)
 	{
 		return -1;
+	}
+	if(argc >= 4)
+	{
+		pidParent = atoi(argv[3]);
+	}
+
+	std::string strArgs = "-d 600";
+
+	if(argc == 5)
+	{
+		strArgs = argv[4];
 	}
 
 	HANDLE fm;
 	HANDLE mutex = CreateMutex(nullptr, FALSE, argv[1]);
 	SM* sm;
 
-	const std::string strArgs = "-d 600";
+	
 
 	try
 	{
@@ -138,7 +159,11 @@ int main(int argc, char** argv)
 
 	while(sm->iStatus != EXIT)
 	{
-		if (sm->iStatus == SEND_DATA || sm->iStatus == SEND_DATA_PART)
+		if(pidParent != 0 && !parentProcessRunning(pidParent))
+		{
+			sm->iStatus = EXIT;
+		}
+		else if (sm->iStatus == SEND_DATA || sm->iStatus == SEND_DATA_PART)
 		{
 			char* szData = _strdup(ReceiveData(sm, mutex).c_str());
 			char* szArgs = _strdup(strArgs.c_str());
