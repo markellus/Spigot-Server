@@ -17,7 +17,10 @@
 
 cmake_minimum_required (VERSION 3.1)
 project (Spigot)
-add_library(spgt-lib SHARED
+
+set (CMAKE_CXX_STANDARD 17)
+
+set(SpigotFiles
 ../spigot/consts.cpp ../spigot/erf.cpp ../spigot/exp.cpp ../spigot/expr.cpp ../spigot/gamma.cpp ../spigot/arithmetic.cpp ../spigot/io.cpp
 ../spigot/iocli.cpp ../spigot/monotone.cpp ../spigot/noexcept.cpp
 ../spigot/baseout.cpp ../spigot/spigot.cpp ../spigot/sqrt.cpp ../spigot/trig.cpp ../spigot/unary.cpp ../spigot/lambertw.cpp
@@ -26,7 +29,10 @@ add_library(spgt-lib SHARED
 ../spigot/bigint.h ../spigot/cr.h ../spigot/error.h ../spigot/expr.h ../spigot/funcs.h ../spigot/baseout.h
 ../spigot/spigot.h ../spigot/bi_gmp.h ../spigot/bi_internal.h ../spigot/version.h ../spigot/cfracout.h ../spigot/holefiller.h
 ../spigot/io.h
-exports.h exports.cpp)
+Library/exports.h Library/exports.cpp)
 
-add_executable(spgt-server main.cpp)
-add_dependencies(spgt-server spgt-lib)
+add_library(spgt-lib SHARED ${SpigotFiles})
+
+add_library(spgt-wrp MODULE MultiWrapper/SpgtInstance.h MultiWrapper/SpgtInstance.cpp MultiWrapper/exports.h MultiWrapper/exports.cpp)
+
+add_executable(spgt-cmd main.cpp)
